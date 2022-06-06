@@ -1,0 +1,25 @@
+{
+  "name": "raffle",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
+    "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "ethers": "^5.6.8",
+    "hardhat": "^2.9.7",
+    "hardhat-deploy": "^0.11.10",
+    "prettier": "^2.6.2",
+    "prettier-plugin-solidity": "^1.0.0-beta.19"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^0.4.1",
+    "dotenv": "^16.0.1"
+  }
+}
