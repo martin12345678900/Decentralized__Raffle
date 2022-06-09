@@ -8,19 +8,20 @@ error Raffle__SendMoreToEnterRaffle();
 error Raffle__RaffleNotOpen();
 error Raffle__UpkeepNotNeeded();
 error Raffle__TransferFailed();
+error Raffle__NotAdmin();
 
 contract Raffle is VRFConsumerBaseV2 {
     enum RaffleState {
         Open,
+        Closed,
         Calculating
     }
 
     uint256 public immutable i_entranceFee;
-    uint256 public immutable i_interval;
-    uint256 public s_lastTimestampt;
     RaffleState public s_raffleState;
     address payable[] public s_players;
     address payable public s_recentWinner;
+    address public i_admin;
 
     VRFCoordinatorV2Interface public immutable i_vrfCordinator;
     bytes32 public i_gasLane;
@@ -36,50 +37,37 @@ contract Raffle is VRFConsumerBaseV2 {
 
     constructor(
         uint256 entranceFee,
-        uint256 interval, 
         address vrfCordinatorV2, 
         bytes32 gasLane,
         uint64 subscriptionId,
         uint32 callbackGasLimit
     ) VRFConsumerBaseV2(vrfCordinatorV2) {
+        i_admin = msg.sender;
         i_entranceFee = entranceFee;
-        i_interval = interval;
-        s_lastTimestampt = block.timestamp;
         i_vrfCordinator = VRFCoordinatorV2Interface(vrfCordinatorV2); // interface + address = contract
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
     }
 
+    /// @notice first line checks if there is enough deposited ether in the function to enter the raffle
+    /// @dev if yes we push the current player in our array
+    /// @dev emitting an event
+    
     function enterRaffle() external payable {
         if (msg.value < i_entranceFee) revert Raffle__SendMoreToEnterRaffle();
-        if (s_raffleState != RaffleState.Open) revert Raffle__RaffleNotOpen();
+        //if (s_raffleState != RaffleState.Open) revert Raffle__RaffleNotOpen();
 
         s_players.push(payable(msg.sender));
         emit RaffleEntered(msg.sender);
     }
 
-    // 1. Be true after some time interval
-    // 2. The lottery to be open
-    // 3. The contract has ETH
-    // 4. Keepers has LINK
-    
-    function checkUpkeep(bytes memory /* checkData */) public view returns(bool upkeepNeeded, bytes memory /* performData */) {
-        bool isOpen = RaffleState.Open == s_raffleState;
-        bool timePassed = ((block.timestamp - s_lastTimestampt) > i_interval); // keep track of time
-        bool hasBalance = address(this).balance > 0;
-        bool hasPlayers = s_players.length > 0;
-
-        //upkeepNeeded = (isOpen && timePassed && hasBalance);
-        return ((isOpen && timePassed && hasBalance && hasPlayers), "0x0");
-    }
-
-    function performUpkeep(bytes calldata /* performData */) external {
-        (bool upkeepNeeded,) = checkUpkeep("0x0");
-        if (!upkeepNeeded) revert Raffle__UpkeepNotNeeded();
+    function closeRaffle() external adminOnly() {
+        bool upKeepNeeded = checkUpKeep();
+        if (!upKeepNeeded) revert Raffle__UpkeepNotNeeded();
 
         s_raffleState = RaffleState.Calculating;
-        uint256 requestId = i_vrfCordinator.requestRandomWords(
+        uint requestId = i_vrfCordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
             REQUEST_CONFIRMATIONS,
@@ -89,6 +77,11 @@ contract Raffle is VRFConsumerBaseV2 {
         emit RequestedRaffleWinner(requestId);
     }
 
+    // 1. Be true after some time interval
+    // 2. The lottery to be open
+    // 3. The contract has ETH
+    // 4. Keepers has LINK
+
     function fulfillRandomWords(
         uint256 /* requestId */,
         uint256[] memory randomWords
@@ -97,11 +90,58 @@ contract Raffle is VRFConsumerBaseV2 {
         address payable recentWinner = s_players[indexOfWinner];
         s_recentWinner = recentWinner;
         s_players = new address payable[](0);
-        s_raffleState = RaffleState.Open;
-        s_lastTimestampt = block.timestamp;
+        s_raffleState = RaffleState.Closed;
         (bool success, ) = recentWinner.call{ value: address(this).balance }("");
         if (!success) revert Raffle__TransferFailed();
   
         emit WinnerPicked(recentWinner);
+    }
+
+    /// @notice checks if the raffle state is open
+    /// @notice checks if there is any balance deposited in the contract
+    /// @notice checks if there are any players
+    /// @return bool checks if all conditions are true
+
+    function checkUpKeep() public view returns(bool) {
+         bool isOpen = s_raffleState == RaffleState.Open;
+         bool hasBalance = address(this).balance > 0;
+         bool hasPlayers = s_players.length > 0;
+
+        return (isOpen && hasBalance && hasPlayers);
+    }
+
+    modifier adminOnly() {
+        if (msg.sender != i_admin) revert Raffle__NotAdmin();
+        _;
+    }
+
+    /** Getter Functions */
+
+    function getRaffleState() public view returns (RaffleState) {
+        return s_raffleState;
+    }
+
+    function getNumWords() public pure returns (uint256) {
+        return NUM_WORDS;
+    }
+
+    function getRequestConfirmations() public pure returns (uint256) {
+        return REQUEST_CONFIRMATIONS;
+    }
+
+    function getRecentWinner() public view returns (address) {
+        return s_recentWinner;
+    }
+
+    function getPlayer(uint256 index) public view returns (address) {
+        return s_players[index];
+    }
+
+    function getEntranceFee() public view returns (uint256) {
+        return i_entranceFee;
+    }
+
+    function getNumberOfPlayers() public view returns (uint256) {
+        return s_players.length;
     }
 }
