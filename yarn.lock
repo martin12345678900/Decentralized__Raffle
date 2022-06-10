@@ -3164,7 +3164,7 @@
     "secp256k1" "^4.0.1"
     "setimmediate" "^1.0.5"
 
-"ethereum-waffle@^3.2.0":
+"ethereum-waffle@^3.2.0", "ethereum-waffle@^3.4.4":
   "integrity" "sha512-PA9+jCjw4WC3Oc5ocSMBj5sXvueWQeAbvCA+hUlb6oFgwwKyq5ka3bWQ7QZcjzIX+TdFkxP4IbFmoY2D8Dkj9Q=="
   "resolved" "https://registry.npmjs.org/ethereum-waffle/-/ethereum-waffle-3.4.4.tgz"
   "version" "3.4.4"
