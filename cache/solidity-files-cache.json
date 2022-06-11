@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/martin/Desktop/Raffle_App/Decentralized_Raffle/contracts/Raffle.sol": {
-      "lastModificationDate": 1654867508016,
-      "contentHash": "3e6b1aa3a620d30a349180b7f78b7b9c",
+      "lastModificationDate": 1654955276656,
+      "contentHash": "c22295e9e2db319087a744c01dff79fd",
       "sourceName": "contracts/Raffle.sol",
       "solcConfig": {
         "version": "0.8.7",

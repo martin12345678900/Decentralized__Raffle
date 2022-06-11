@@ -62,7 +62,7 @@ contract Raffle is VRFConsumerBaseV2 {
         emit RaffleEntered(msg.sender);
     }
 
-    function closeRaffle() external adminOnly() {
+    function closeRaffle() external adminOnly() returns(uint256) {
         bool upKeepNeeded = checkUpKeep();
         if (!upKeepNeeded) revert Raffle__UpkeepNotNeeded();
 
@@ -75,6 +75,8 @@ contract Raffle is VRFConsumerBaseV2 {
             NUM_WORDS
         );
         emit RequestedRaffleWinner(requestId);
+
+        return requestId;
     }
 
     // 1. Be true after some time interval
@@ -90,7 +92,7 @@ contract Raffle is VRFConsumerBaseV2 {
         address payable recentWinner = s_players[indexOfWinner];
         s_recentWinner = recentWinner;
         s_players = new address payable[](0);
-        s_raffleState = RaffleState.Closed;
+        s_raffleState = RaffleState.Open;
         (bool success, ) = recentWinner.call{ value: address(this).balance }("");
         if (!success) revert Raffle__TransferFailed();
   
